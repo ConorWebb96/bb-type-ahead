@@ -1,0 +1,168 @@
+{
+  "type": "component",
+  "metadata": {},
+  "schema": {
+    "name": "bb-typehead",
+    "friendlyName": "Typehead",
+    "description": "A custom component used for filtering selectable items whether that be relationships or general options.",
+    "icon": "Menu",
+    "requiredAncestors": ["form"],
+    "settings": [
+      {
+        "type": "table",
+        "label": "Table",
+        "key": "dataSource",
+        "required": true
+      },
+      {
+        "type": "text",
+        "label": "Label",
+        "key": "label"
+      },
+      {
+        "type": "select",
+        "label": "Type",
+        "key": "optionsType",
+        "defaultValue": "select",
+        "placeholder": "Pick an options type",
+        "options": [
+          {
+            "label": "Fields",
+            "value": "fields"
+          },
+          {
+            "label": "Array",
+            "value": "array"
+          }
+        ]
+      },
+      {
+        "type": "field/link",
+        "label": "Field",
+        "key": "relationship",
+        "dependsOn": {
+          "setting": "optionsType",
+          "value": "relationship"
+        },
+        "required": true
+      },
+      {
+        "type": "field",
+        "label": "Field",
+        "key": "field",
+        "dependsOn": {
+          "setting": "optionsType",
+          "value": "fields"
+        },
+        "required": true
+      },
+      {
+        "type": "field/array",
+        "label": "Field",
+        "key": "array",
+        "dependsOn": {
+          "setting": "optionsType",
+          "value": "array"
+        },
+        "required": true
+      },
+      {
+        "section": true,
+        "name": "Configuration",
+        "settings": [
+          {
+            "type": "select",
+            "label": "Type",
+            "key": "searchOptionsType",
+            "defaultValue": "select",
+            "placeholder": "Pick an options type",
+            "options": [
+              {
+                "label": "Fields",
+                "value": "searchFields"
+              },
+              {
+                "label": "Array",
+                "value": "searchArray"
+              }
+            ]
+          },
+          {
+            "type": "field/link",
+            "label": "Search Field",
+            "key": "relationship",
+            "dependsOn": {
+              "setting": "searchOptionsType",
+              "value": "searchRelationship"
+            },
+            "required": true
+          },
+          {
+            "type": "field",
+            "label": "Search Field",
+            "key": "searchField",
+            "dependsOn": {
+              "setting": "searchOptionsType",
+              "value": "searchFields"
+            },
+            "required": true
+          },
+          {
+            "type": "field/array",
+            "label": "Search Field",
+            "key": "searchArray",
+            "dependsOn": {
+              "setting": "searchOptionsType",
+              "value": "searchArray"
+            },
+            "required": true
+          },
+          {
+            "type": "field",
+            "label": "Label",
+            "key": "labelColumn"
+          },
+          {
+            "type": "field",
+            "label": "Value",
+            "key": "valueColumn"
+          }
+        ]
+      },
+      {
+        "section": true,
+        "name": "Actions",
+        "settings": [
+          {
+            "type": "boolean",
+            "label": "Alphabetical",
+            "key": "sort",
+            "defaultValue": true
+          },
+          {
+            "type": "boolean",
+            "label": "Disabled",
+            "key": "disabled",
+            "defaultValue": false
+          },
+          {
+            "type": "event",
+            "label": "On change",
+            "key": "onChange",
+            "context": [
+              {
+                "label": "Field Value",
+                "key": "value"
+              }
+            ]
+          },
+          {
+            "type": "validation/string",
+            "label": "Validation",
+            "key": "validation"
+          }
+        ]
+      }
+    ]
+  }
+}

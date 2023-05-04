@@ -1,0 +1,159 @@
+{
+  "type": "component",
+  "metadata": {},
+  "schema": {
+    "name": "bb-typehead",
+    "friendlyName": "Typehead",
+    "description": "A custom component used for filtering selectable items whether that be relationships or general options.",
+    "icon": "Menu",
+    "requiredAncestors": ["form"],
+    "settings": [
+      {
+        "type": "text",
+        "label": "Label",
+        "key": "label"
+      },
+      {
+        "type": "text",
+        "label": "Placeholder",
+        "key": "placeholder",
+        "placeholder": "Choose an option"
+      },
+      {
+        "type": "text",
+        "label": "Default value",
+        "key": "defaultValue"
+      },
+      {
+        "type": "select",
+        "label": "Type",
+        "key": "optionsType",
+        "defaultValue": "select",
+        "placeholder": "Pick an options type",
+        "options": [
+          {
+            "label": "Relationship",
+            "value": "relationship"
+          },
+          {
+            "label": "Fields",
+            "value": "fields"
+          },
+          {
+            "label": "Array",
+            "value": "array"
+          }
+        ]
+      },
+      {
+        "type": "field/link",
+        "label": "Binded Field",
+        "key": "relationship",
+        "dependsOn": {
+          "setting": "optionsType",
+          "value": "relationship"
+        },
+        "required": true
+      },
+      {
+        "type": "field",
+        "label": "Binded Field",
+        "key": "field",
+        "dependsOn": {
+          "setting": "optionsType",
+          "value": "fields"
+        },
+        "required": true
+      },
+      {
+        "type": "field/array",
+        "label": "Binded Field",
+        "key": "array",
+        "dependsOn": {
+          "setting": "optionsType",
+          "value": "array"
+        },
+        "required": true
+      },
+      {
+        "type": "select",
+        "label": "Options source",
+        "key": "optionsSource",
+        "defaultValue": "schema",
+        "placeholder": "Pick an options source",
+        "options": [
+          {
+            "label": "Schema",
+            "value": "schema"
+          },
+          {
+            "label": "Data provider",
+            "value": "provider"
+          }
+        ]
+      },
+      {
+        "type": "dataProvider",
+        "label": "Options provider",
+        "key": "dataProvider",
+        "required": true,
+        "dependsOn": {
+          "setting": "optionsSource",
+          "value": "provider"
+        }
+      },
+      {
+        "type": "field",
+        "label": "Label column",
+        "key": "labelColumn",
+        "dependsOn": {
+          "setting": "optionsSource",
+          "value": "provider"
+        }
+      },
+      {
+        "type": "field",
+        "label": "Value column",
+        "key": "valueColumn",
+        "dependsOn": {
+          "setting": "optionsSource",
+          "value": "provider"
+        }
+      },
+      {
+        "section": true,
+        "name": "Actions",
+        "settings": [
+          {
+            "type": "boolean",
+            "label": "Alphabetical",
+            "key": "sort",
+            "defaultValue": true
+          },
+          {
+            "type": "boolean",
+            "label": "Disabled",
+            "key": "disabled",
+            "defaultValue": false
+          },
+          {
+            "type": "event",
+            "label": "On change",
+            "key": "onChange",
+            "context": [
+              {
+                "label": "Field Value",
+                "key": "value"
+              }
+            ]
+          },
+          {
+            "type": "validation/string",
+            "label": "Validation",
+            "key": "validation"
+          }
+        ]
+      }
+    ]
+  }
+}
