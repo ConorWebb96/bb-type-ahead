@@ -1,6 +1,6 @@
 {
   "name": "bb-typehead",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A component used for filtering selectable items whether that be relationships or general options.",
   "license": "MIT",
   "svelte": "index.js",
