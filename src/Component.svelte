@@ -5,7 +5,7 @@
   import { fly } from "svelte/transition"
   import clickOutside from "./click_outside"
 
-  const { API, notificationStore } = getContext("sdk");
+  const { API } = getContext("sdk");
   const component = getContext("component")
 
   const debounce = (callback, minDelay = 1000) => {
@@ -26,11 +26,14 @@
   export let label;
   export let placeholder;
   export let defaultValue
-
+  
+  export let limitResults;
   export let optionsType;
   export let field;
   export let array;
+  export let relationship;
   let bindedField = optionsType === 'relationship' ? relationship : optionsType === 'fields' ? field : optionsType === 'array' ? array : null;
+  let type = optionsType === 'relationship' ? 'relationship' : optionsType === 'array' ? 'array' : 'string';
 
   export let searchOptionsType;
   export let searchRelationship;
@@ -44,7 +47,7 @@
   export let onChange;
   export let validation;
 
-  let searching = false;
+  let searching = null;
   let searchString;
   let optionsTypeState;
   let fieldApi;
@@ -66,7 +69,7 @@
   $: formStep = formStepContext ? $formStepContext || 1 : 1
   $: formField = formApi?.registerField(
     bindedField,
-    "string",
+    optionsType,
     defaultValue,
     disabled,
     validation,
@@ -83,12 +86,9 @@
     fieldApi?.deregister()
     unsubscribe?.()
   })
-  
   // field type select
   optionsTypeState = searchOptionsType === 'relationship' ? searchRelationship : searchOptionsType === 'searchFields' ? searchField : searchOptionsType === 'searchArray' ? searchArray : null;
-
   $: debouncedSearch(searchString);
-
   const search = async (searchString) => {
     if (searchString == null || searchString.length < 1) {
       return 
@@ -106,24 +106,20 @@
     //     },
     //   };
     // }
-    if (searchOptionsType === 'array') {
-      // Additional logic here to convert search string to array after ,
-      
+    if (searchOptionsType === 'searchArray') {
+      // Additional logic here to convert search string to array after,
       queryParam = {
         string: {
           [`${optionsTypeState}`]: [searchString] || "",
         },
       };
     }
-
     const searchResults = await API.searchTable({
       paginate: false,
       tableId: dataSource.tableId,
-      limit: 20,
+      limit: limitResults,
       query: queryParam,
-      paginate: false,
     });
-
     if (sort === true) {
       if (Array.isArray(searchResults)) { // check if searchResults is an array
         searchResults.sort((a, b) => {
@@ -155,9 +151,22 @@
       open = false
     }
   }
+  // reset filters
+  function clearSelectedResults() {
+    fieldApi.setValue(null);
+    selectedLabels = [];
+    selectedValues = [];
+  }
+  function handleSelectedLabels(event) {
+    selectedLabels = event.detail;
+  }
+  function handleSelectedValues(event) {
+    selectedValues = event.detail;
+    if (onChange) { // apply onchange here related to the value
+      onChange({ value: event.detail });
+    }
+  }
 </script>
-{JSON.stringify(fieldState)}
-
   <div class="spectrum-Form--labelsAbove" use:styleable={$component.styles}>
     {#if !formContext}
       <div class="placeholder">Form components need to be wrapped in a form</div>
@@ -180,7 +189,17 @@
             class="spectrum-Picker w-full spectrum-Picker--sizeM"
             on:click={onClick}
           >
-            <span class="spectrum-Picker-label is-placeholder">{ placeholder ? placeholder : 'Choose some options' }</span>
+            {#if selectedLabels.length}
+              <span class="spectrum-Picker-label is-placeholder">
+                {#each selectedLabels.slice(0, 4) as label, idx}
+                  {#if idx > 0}, {/if}
+                  {label.label}
+                {/each}
+                <strong>{#if selectedLabels.length > 4} + {selectedLabels.length - 4}{/if}</strong>
+              </span>
+            {:else}
+               <span class="spectrum-Picker-label is-placeholder">{ placeholder ? placeholder : 'Choose some options' }</span>
+            {/if}
             <svg class="spectrum-Icon spectrum-UIIcon-ChevronDown100 spectrum-Picker-menuIcon" focusable="false" aria-hidden="true"><use xlink:href="#spectrum-css-icon-Chevron100"></use></svg>
           </button>
           {#if open}
@@ -204,17 +223,26 @@
                   <span class="spinner spinner-large"></span>
                 {:else}
                    <ul class="spectrum-Menu" role="listbox">
-                     {#each results as option, idx}
-                      <ListItem
-                        labelColumn={labelColumn}
-                        valueColumn={valueColumn}
-                        disabled={disabled}
-                        option={option}
-                        fieldApi={fieldApi}
-                        selectedLabels={selectedLabels}
-                        selectedValues={selectedValues}
-                      />
-                     {/each}
+                    {#if searching == false && results.length < 1}
+                      <!-- content here -->
+                      <span style="display: block; padding: 0 15px;">No results found</span> 
+                    {:else}
+                       <!-- else content here -->
+                       {#each results as option, idx}
+                        <ListItem
+                          labelColumn={labelColumn}
+                          valueColumn={valueColumn}
+                          disabled={disabled}
+                          option={option}
+                          fieldApi={fieldApi}
+                          selectedLabels={selectedLabels}
+                          selectedValues={selectedValues}
+                          on:selectedLabels={handleSelectedLabels}
+                          on:selectedValues={handleSelectedValues}
+                          type={type}
+                        />
+                       {/each}
+                    {/if}
                    </ul>
                 {/if}
               {:else}
@@ -231,6 +259,9 @@
   }
   .spectrum-Textfield.w-full {
     border-bottom: 1px solid var(--spectrum-textfield-m-border-color, var(--spectrum-alias-border-color));
+  }
+  ul.spectrum-Menu {
+    max-height: 250px;
   }
   .spectrum-Textfield input {
     border: none!important;
