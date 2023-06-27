@@ -2,7 +2,7 @@
 This is a readme for the Type ahead field custom plugin.
 
 # Description
-A component used for to querying tables, search through results, select and then save selected items back to the db.
+A component used for querying tables, searching through results, selecting and then saving selected items back to the db.
 
 ## Configuration
 
