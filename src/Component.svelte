@@ -167,7 +167,7 @@
     }
   }
 </script>
-  <div class="spectrum-Form--labelsAbove" use:styleable={$component.styles}>
+  <div class="spectrum-Form-item" use:styleable={$component.styles}>
     {#if !formContext}
       <div class="placeholder">Form components need to be wrapped in a form</div>
     {:else}
@@ -187,7 +187,8 @@
       <div class="spectrum-Form-itemField typehead">
           <button 
             class="spectrum-Picker w-full spectrum-Picker--sizeM"
-            on:click={onClick}
+            on:click={disabled ? null : onClick}
+            class:disabled={disabled}
           >
             {#if selectedLabels.length}
               <span class="spectrum-Picker-label is-placeholder">
@@ -254,6 +255,10 @@
     {/if}
   </div>
 <style>
+  .disabled {
+    background: var(--spectrum-global-color-gray-200);
+    color: var(--spectrum-global-color-gray-500);
+  }
   .typehead .spectrum-Popover {
     z-index: 99;
   }

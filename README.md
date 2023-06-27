@@ -1,5 +1,5 @@
-# Bb-typehead
-This is a readme for the Typehead field custom plugin.
+# Bb-type-a-head
+This is a readme for the type a head field custom plugin.
 
 # Description
 A component used for filtering to query tables, search through results, select and then save selected items back to the db.

@@ -2,8 +2,8 @@
   "type": "component",
   "metadata": {},
   "schema": {
-    "name": "bb-typehead",
-    "friendlyName": "Typehead",
+    "name": "bb-type-a-head",
+    "friendlyName": "Type a head",
     "description": "A custom component used for filtering selectable items whether that be relationships or general options.",
     "icon": "Menu",
     "requiredAncestors": ["form"],
@@ -23,7 +23,7 @@
         "type": "select",
         "label": "Type",
         "key": "optionsType",
-        "defaultValue": "select",
+        "defaultValue": "fields",
         "placeholder": "Pick an options type",
         "options": [
           {
@@ -42,7 +42,7 @@
       },
       {
         "type": "field/link",
-        "label": "Field",
+        "label": "Binded Field",
         "key": "relationship",
         "dependsOn": {
           "setting": "optionsType",
@@ -52,7 +52,7 @@
       },
       {
         "type": "field",
-        "label": "Field",
+        "label": "Binded Field",
         "key": "field",
         "dependsOn": {
           "setting": "optionsType",
@@ -62,7 +62,7 @@
       },
       {
         "type": "field/array",
-        "label": "Field",
+        "label": "Binded Field",
         "key": "array",
         "dependsOn": {
           "setting": "optionsType",
@@ -82,9 +82,9 @@
           },
           {
             "type": "select",
-            "label": "Type",
+            "label": "Search Type",
             "key": "searchOptionsType",
-            "defaultValue": "select",
+            "defaultValue": "searchFields",
             "placeholder": "Pick an options type",
             "options": [
               {
@@ -100,7 +100,7 @@
           {
             "type": "field/link",
             "label": "Search Field",
-            "key": "relationship",
+            "key": "searchRelationship",
             "dependsOn": {
               "setting": "searchOptionsType",
               "value": "searchRelationship"

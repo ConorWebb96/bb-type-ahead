@@ -2,8 +2,8 @@
   "type": "component",
   "metadata": {},
   "schema": {
-    "name": "bb-typehead",
-    "friendlyName": "Typehead",
+    "name": "bb-type-a-head",
+    "friendlyName": "Type a head",
     "description": "A custom component used for filtering selectable items whether that be relationships or general options.",
     "icon": "Menu",
     "requiredAncestors": ["form"],
