@@ -1,5 +1,5 @@
-# Bb-type-a-head
-This is a readme for the type a head field custom plugin.
+# bb-type-ahead
+This is a readme for the Type ahead field custom plugin.
 
 # Description
 A component used for to querying tables, search through results, select and then save selected items back to the db.
@@ -26,10 +26,10 @@ This section is all related to functionality within the component itself.\
 
 ##Demo
 ### Fields - Single select
-![String type a head example](https://github.com/ConorWebb96/bb-typehead/assets/126772285/edc49b0a-2dd5-48da-808c-9d6e30ff1841)
+![String Type ahead example](https://github.com/ConorWebb96/bb-typehead/assets/126772285/edc49b0a-2dd5-48da-808c-9d6e30ff1841)
 
 ### Arrays - Multi Select
-![Array demo for type a head](https://github.com/ConorWebb96/bb-typehead/assets/126772285/43895e08-1a7a-4c0b-8e01-437e2608086e)
+![Array demo for Type ahead](https://github.com/ConorWebb96/bb-typehead/assets/126772285/43895e08-1a7a-4c0b-8e01-437e2608086e)
 
 ### Relationship Multi-select
 ![Relationship search and assign example](https://github.com/ConorWebb96/bb-typehead/assets/126772285/b94b7fa6-02fe-496f-9bf4-546f74339e97)
