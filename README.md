@@ -2,7 +2,7 @@
 This is a readme for the type a head field custom plugin.
 
 # Description
-A component used for filtering to query tables, search through results, select and then save selected items back to the db.
+A component used for to query tables, search through results, select and then save selected items back to the db.
 
 ## Configuration
 
@@ -35,4 +35,4 @@ This section is all related to functionality within the component itself.\
 ![Relationship search and assign example](https://github.com/ConorWebb96/bb-typehead/assets/126772285/b94b7fa6-02fe-496f-9bf4-546f74339e97)
 
 ## Disclaimer
-You can search on arrays e.g. multi-select inputs within Budibase. However you can only search one of the values within these. In the future I may expand this to search for multiple valeus within these field types.
+You can search on arrays e.g. multi-select columns within Budibase. However you can only search one of the values within these. In the future I may expand this to search for multiple valeus within these field types.
