@@ -163,7 +163,11 @@
   function handleSelectedValues(event) {
     selectedValues = event.detail;
     if (onChange) { // apply onchange here related to the value
-      onChange({ value: event.detail });
+      if (type == "string") {
+        onChange({ value: event.detail[0].value });
+      }else {
+        onChange({ value: event.detail});
+      }
     }
   }
 </script>
