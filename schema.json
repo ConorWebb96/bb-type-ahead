@@ -98,6 +98,26 @@
             ]
           },
           {
+            "type": "select",
+            "label": "Filter Type",
+            "key": "fieldFilters",
+            "dependsOn": {
+              "setting": "searchOptionsType",
+              "value": "searchFields"
+            },
+            "options": [
+              {
+                "label": "Equals",
+                "value": "string"
+              },
+              {
+                "label": "Contains",
+                "value": "fuzzy"
+              }
+            ],
+            "defaultValue": "string"
+          },
+          {
             "type": "field/link",
             "label": "Search Field",
             "key": "searchRelationship",
