@@ -36,6 +36,7 @@
   let type = optionsType === 'relationship' ? 'relationship' : optionsType === 'array' ? 'array' : 'string';
 
   export let searchOptionsType;
+  export let fieldFilters;
   export let searchRelationship;
   export let searchField;
   export let searchArray;
@@ -95,8 +96,8 @@
     }
     searching = true; // start search loading
     let queryParam = {
-      string: {
-        [`${optionsTypeState}`]: searchString || "",
+      [fieldFilters]: {
+        [optionsTypeState]: searchString || "",
       },
     };
     // if (searchOptionsType === 'relationship') {
@@ -110,7 +111,7 @@
       // Additional logic here to convert search string to array after,
       queryParam = {
         string: {
-          [`${optionsTypeState}`]: [searchString] || "",
+          [optionsTypeState]: [searchString] || "",
         },
       };
     }
