@@ -20,6 +20,11 @@
         "key": "label"
       },
       {
+        "type": "text",
+        "label": "Placeholder",
+        "key": "placeholder"
+      },
+      {
         "type": "select",
         "label": "Type",
         "key": "optionsType",
