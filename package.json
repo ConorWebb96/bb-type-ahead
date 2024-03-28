@@ -1,6 +1,6 @@
 {
   "name": "bb-type-ahead",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "A component used for filtering selectable items whether that be relationships or general options.",
   "license": "MIT",
   "svelte": "index.js",
