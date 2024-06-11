@@ -90,6 +90,18 @@
   // field type select
   optionsTypeState = searchOptionsType === 'relationship' ? searchRelationship : searchOptionsType === 'searchFields' ? searchField : searchOptionsType === 'searchArray' ? searchArray : null;
   $: debouncedSearch(searchString);
+
+  // Initialise selected values if fieldState?.value is present
+  $: if (fieldState?.value) {
+    if (type === 'string') {
+      selectedLabels = [{ label: fieldState.value }];
+      selectedValues = [{ value: fieldState.value }];
+    } else {
+      selectedLabels = fieldState.value.map(item => ({ label: item[labelColumn] }));
+      selectedValues = fieldState.value.map(item => ({ value: item[valueColumn] }));
+    }
+  }
+
   const search = async (searchString) => {
     if (searchString == null || searchString.length < 1) {
       return 
