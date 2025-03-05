@@ -127,9 +127,8 @@
         },
       };
     }
-    const searchResults = await API.searchTable({
+    const searchResults = await API.searchTable(dataSource.tableId, {
       paginate: false,
-      tableId: dataSource.tableId,
       limit: limitResults,
       query: queryParam,
     });
