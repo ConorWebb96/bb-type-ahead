@@ -183,7 +183,7 @@
     }
   }
 </script>
-  <div class="spectrum-Form-item {labelClass === "above" ? "flexCol" : ""}" use:styleable={$component.styles}>
+  <div class="spectrum-Form-item {labelPos === "above" ? "flexCol" : ""}" use:styleable={$component.styles}>
     {#if !formContext}
       <div class="placeholder">Form components need to be wrapped in a form</div>
     {:else}
