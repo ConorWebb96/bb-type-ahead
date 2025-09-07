@@ -5,7 +5,7 @@
     "name": "bb-type-ahead",
     "friendlyName": "Type ahead",
     "description": "A custom component used for filtering selectable items whether that be relationships or general options.",
-    "icon": "Menu",
+    "icon": "keyboard",
     "requiredAncestors": ["form"],
     "settings": [
       {
@@ -84,6 +84,18 @@
             "label": "Limit",
             "key": "limitResults",
             "defaultValue": 25
+          },
+          {
+            "type": "number",
+            "label": "Minimum search length",
+            "key": "minSearchLength",
+            "placeholder": "1"
+          },
+          {
+            "type": "boolean",
+            "label": "Sort results",
+            "key": "sort",
+            "defaultValue": false
           },
           {
             "type": "select",

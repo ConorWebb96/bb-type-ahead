@@ -26,6 +26,7 @@
   export let label;
   export let placeholder;
   export let defaultValue
+  export let minSearchLength = 1;
   
   export let limitResults;
   export let optionsType;
@@ -48,13 +49,17 @@
   export let onChange;
   export let validation;
 
-  let searching = null;
-  let searchString;
-  let optionsTypeState;
+  let searching = false;
+  let searchString = '';
+  let searchFieldState;
   let fieldApi;
   let fieldState;
   let results = [];
+  let searchCache = new Map();
+  let abortController = null;
   let open = false;
+  let highlightedIndex = -1;
+  let popoverElement;
 
   $: selectedLabels = [];
   $: selectedValues = [];
@@ -88,7 +93,7 @@
     unsubscribe?.()
   })
   // field type select
-  optionsTypeState = searchOptionsType === 'relationship' ? searchRelationship : searchOptionsType === 'searchFields' ? searchField : searchOptionsType === 'searchArray' ? searchArray : null;
+  searchFieldState = searchOptionsType === 'relationship' ? searchRelationship : searchOptionsType === 'searchFields' ? searchField : searchOptionsType === 'searchArray' ? searchArray : null;
   $: debouncedSearch(searchString);
 
   // Initialise selected values if fieldState?.value is present
@@ -103,71 +108,146 @@
   }
 
   const search = async (searchString) => {
-    if (searchString == null || searchString.length < 1) {
-      return 
+    if (!searchString || searchString.length < minSearchLength) {
+      results = [];
+      return;
     }
-    searching = true; // start search loading
-    let queryParam = {
-      [fieldFilters]: {
-        [optionsTypeState]: searchString || "",
-      },
-    };
-    // if (searchOptionsType === 'relationship') {
-    //   queryParam = {
-    //     string: {
-    //       [`1:${optionsTypeState}`]: searchString || "",
-    //     },
-    //   };
-    // }
-    if (searchOptionsType === 'searchArray') {
-      // Additional logic here to convert search string to array after,
-      queryParam = {
-        string: {
-          [optionsTypeState]: [searchString] || "",
+
+    // Check cache first
+    const cacheKey = `${searchString}-${searchFieldState}-${fieldFilters}`;
+    if (searchCache.has(cacheKey)) {
+      results = searchCache.get(cacheKey);
+      return;
+    }
+
+    // Cancel previous request
+    if (abortController) {
+      abortController.abort();
+    }
+    abortController = new AbortController();
+
+    searching = true;
+    
+    try {
+      let queryParam = {
+        [fieldFilters]: {
+          [searchFieldState]: searchString,
         },
       };
-    }
-    const searchResults = await API.searchTable(dataSource.tableId, {
-      paginate: false,
-      limit: limitResults,
-      query: queryParam,
-    });
-    if (sort === true) {
-      if (Array.isArray(searchResults)) { // check if searchResults is an array
-        searchResults.sort((a, b) => {
-          const optionsTypeStateA = a.optionsTypeState.toLowerCase();
-          const optionsTypeStateB = b.optionsTypeState.toLowerCase();
-          if (optionsTypeStateA < optionsTypeStateB) {
-            return -1;
-          }
-          if (optionsTypeStateA > optionsTypeStateB) {
-            return 1;
-          }
-          return 0;
-        });
-      } else {
-        // handle error exception here
+
+      if (searchOptionsType === 'searchArray') {
+        queryParam = {
+          string: {
+            [searchFieldState]: [searchString],
+          },
+        };
       }
+
+      const searchResults = await API.searchTable(dataSource.tableId, {
+        paginate: false,
+        limit: limitResults,
+        query: queryParam,
+      });
+
+      if (searchResults?.rows) {
+        let processedResults = searchResults.rows.map(row => ({
+          _id: row._id,
+          [labelColumn]: row[labelColumn],
+          [valueColumn]: row[valueColumn]
+        }));
+
+        if (sort && processedResults.length > 1) {
+          processedResults.sort((a, b) => {
+            const labelA = (a[labelColumn] || '').toString().toLowerCase();
+            const labelB = (b[labelColumn] || '').toString().toLowerCase();
+            return labelA.localeCompare(labelB);
+          });
+        }
+
+        results = processedResults;
+        searchCache.set(cacheKey, results);
+
+        // Limit cache size
+        if (searchCache.size > 50) {
+          const firstKey = searchCache.keys().next().value;
+          searchCache.delete(firstKey);
+        }
+      } else {
+        results = [];
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error('Search failed:', error);
+        results = [];
+      }
+    } finally {
+      searching = false;
+      abortController = null;
     }
-    searching = false; // end searching loading
-    results = searchResults.rows.map(({ _id, [labelColumn]: val, [valueColumn]: value }) => ({ _id, [labelColumn]: val, [valueColumn]: value })); // reduce array to include id and selected field
   }
   const debouncedSearch = debounce(search, 750);
 
   const onClick = () => {
-    open = true
+    open = true;
+    highlightedIndex = -1;
   }
   const handleOutsideClick = event => {
     if (open) {
-      event.stopPropagation()
-      open = false
+      event.stopPropagation();
+      open = false;
+      highlightedIndex = -1;
     }
-  }
+  };
+
+  const handleKeyDown = (event) => {
+    if (!open) {
+      if (event.key === 'Enter' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        onClick();
+      }
+      return;
+    }
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        highlightedIndex = Math.min(highlightedIndex + 1, results.length - 1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        highlightedIndex = Math.max(highlightedIndex - 1, -1);
+        break;
+      case 'Enter':
+        event.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < results.length) {
+          const option = results[highlightedIndex];
+          selectOption(option);
+        }
+        break;
+      case 'Escape':
+        event.preventDefault();
+        open = false;
+        highlightedIndex = -1;
+        break;
+    }
+  };
+
+  const selectOption = (option) => {
+    // This will be handled by the ListItem component
+    // but we need to close the dropdown and reset highlight
+    open = false;
+    highlightedIndex = -1;
+  };
   // reset filters
   function clearSelectedResults() {
-    fieldApi.setValue(null);
+    if (fieldApi && typeof fieldApi.setValue === 'function') {
+      fieldApi.setValue(null);
+    }
     selectedLabels = [];
     selectedValues = [];
+    results = [];
+    searchString = '';
+    searchCache.clear();
   }
   function handleSelectedLabels(event) {
     selectedLabels = event.detail;
@@ -183,6 +263,7 @@
     }
   }
 </script>
+asdasd
   <div class="spectrum-Form-item {labelClass === "above" ? "flexCol" : ""}" use:styleable={$component.styles}>
     {#if !formContext}
       <div class="placeholder">Form components need to be wrapped in a form</div>
@@ -204,7 +285,12 @@
           <button 
             class="spectrum-Picker w-full spectrum-Picker--sizeM"
             on:click={disabled ? null : onClick}
+            on:keydown={disabled ? null : handleKeyDown}
             class:disabled={disabled}
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            aria-label={label || 'Type ahead selector'}
+            id="typeahead-button-{fieldState?.fieldId}"
           >
             {#if selectedLabels.length}
               <span class="spectrum-Picker-label is-placeholder">
@@ -221,17 +307,24 @@
           </button>
           {#if open}
             <div
+              bind:this={popoverElement}
               use:clickOutside={handleOutsideClick}
               transition:fly|local={{ y: -20, duration: 200 }}
               class="spectrum-Popover spectrum-Popover--bottom spectrum-Picker-popover is-open w-full"
+              role="listbox"
+              aria-labelledby="typeahead-button-{fieldState?.fieldId}"
             >
               <div class="spectrum-Textfield w-full">
                 <svg class="spectrum-Icon spectrum-Icon--sizeM spectrum-Textfield-icon" focusable="false" aria-hidden="true"><use xlink:href="#spectrum-icon-18-Magnify"></use></svg>
                 <input 
                   type="search"
                   bind:value={searchString}
+                  on:keydown={handleKeyDown}
                   class="spectrum-Textfield-input spectrum-Search-input"
                   placeholder="Search"
+                  aria-label="Search options"
+                  autocomplete="off"
+                  spellcheck="false"
                 />
                 <button type="reset" on:click={() => clearSelectedResults()} class="spectrum-ClearButton spectrum-Search-clearButton"><svg class="spectrum-Icon spectrum-UIIcon-Cross75" focusable="false" aria-hidden="true"><use xlink:href="#spectrum-css-icon-Cross75"></use></svg></button>
               </div>
@@ -239,13 +332,12 @@
                 {#if searching}
                   <span class="spinner spinner-large"></span>
                 {:else}
-                   <ul class="spectrum-Menu" role="listbox">
+                   <ul class="spectrum-Menu" role="listbox" aria-label="Search results">
                     {#if searching == false && results.length < 1}
-                      <!-- content here -->
-                      <span style="display: block; padding: 0 15px;">No results found</span> 
+                      <span class="no-results">No results found</span>
                     {:else}
                        <!-- else content here -->
-                       {#each results as option, idx}
+                       {#each results as option, index}
                         <ListItem
                           labelColumn={labelColumn}
                           valueColumn={valueColumn}
@@ -257,6 +349,8 @@
                           on:selectedLabels={handleSelectedLabels}
                           on:selectedValues={handleSelectedValues}
                           type={type}
+                          highlighted={highlightedIndex === index}
+                          on:select={() => selectOption(option)}
                         />
                        {/each}
                     {/if}
@@ -341,5 +435,31 @@
   }
   .customSvgColour {
     fill: var(--spectrum-global-color-gray-900);
+  }
+
+  /* Loading state improvements */
+  .spinner {
+    margin: 1rem auto;
+    display: block;
+  }
+
+  /* Better visual feedback */
+  .spectrum-Picker:focus-visible {
+    outline: 2px solid var(--spectrum-global-color-blue-400);
+    outline-offset: 2px;
+  }
+
+  .spectrum-Search-input:focus {
+    outline: none;
+    border-color: var(--spectrum-global-color-blue-400) !important;
+  }
+
+  /* No results message styling */
+  .no-results {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: var(--spectrum-global-color-gray-600);
+    font-style: italic;
+    text-align: center;
   }
 </style>

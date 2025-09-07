@@ -10,6 +10,7 @@
     export let selectedLabels;
     export let selectedValues;
     export let type;
+    export let highlighted = false;
 
     const dispatch = createEventDispatcher();
     // create a reactive declaration to update the `isSelected` variable
@@ -35,11 +36,25 @@
                 fieldApi.setValue(null); // remove if string type and removed for values.
             }
         }
-        // Remove duplicates from selectedLabels and selectedValues
-        const uniqueSelectedLabels = [...new Set(selectedLabels.map(item => item.label))];
-        const uniqueSelectedValues = [...new Set(selectedValues.map(item => JSON.stringify(item.value)))];
-        selectedLabels = uniqueSelectedLabels.map(label => ({ label }));
-        selectedValues = uniqueSelectedValues.map(value => ({ value: JSON.parse(value) }));
+        // Remove duplicates efficiently using Map for complex objects
+        const labelMap = new Map();
+        const valueMap = new Map();
+        
+        selectedLabels.forEach(item => {
+            if (item && item.label != null) {
+                labelMap.set(item.label, { label: item.label });
+            }
+        });
+        
+        selectedValues.forEach(item => {
+            if (item && item.value != null) {
+                const key = typeof item.value === 'object' ? JSON.stringify(item.value) : String(item.value);
+                valueMap.set(key, item);
+            }
+        });
+        
+        selectedLabels = Array.from(labelMap.values());
+        selectedValues = Array.from(valueMap.values());
         if (type == "array") {
             fieldApi.setValue(selectedValues.map(item => item.value[0])); // set the values on the field api
         } else if(type == "relationship") {
@@ -49,18 +64,21 @@
         // Dispatch the selectedLabels back to the parent component
         dispatch('selectedLabels', selectedLabels);
         dispatch('selectedValues', selectedValues);
+        dispatch('select');
     }
 </script>
     <li
         class="spectrum-Menu-item"
         class:is-selected={isSelected}
+        class:is-highlighted={highlighted}
         role="option"
-        aria-selected="true"
-        tabindex="0"
+        aria-selected={isSelected}
+        tabindex="-1"
         on:click={disabled ? null : () => selectedItem(option[labelColumn], option[valueColumn])}
         on:keydown={(event) => {
-            if (event.key === 'Enter') {
-            selectedItem(option[labelColumn], option[valueColumn])
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                selectedItem(option[labelColumn], option[valueColumn]);
             }
         }}
     >
@@ -76,5 +94,17 @@
         </svg>
     </li>
 <style>
-    /* your styles go here */
+    .spectrum-Menu-item.is-highlighted {
+        background-color: var(--spectrum-global-color-gray-200);
+        cursor: pointer;
+    }
+
+    .spectrum-Menu-item.is-highlighted:not(.is-selected) {
+        background-color: var(--spectrum-alias-highlight-hover);
+    }
+
+    .spectrum-Menu-item:focus-visible {
+        outline: 2px solid var(--spectrum-global-color-blue-400);
+        outline-offset: -2px;
+    }
 </style>
