@@ -81,15 +81,10 @@
         "settings": [
           {
             "type": "number",
-            "label": "Limit",
-            "key": "limitResults",
-            "defaultValue": 25
-          },
-          {
-            "type": "number",
             "label": "Minimum search length",
             "key": "minSearchLength",
-            "placeholder": "1"
+            "placeholder": "1",
+            "defaultValue": 1
           },
           {
             "type": "boolean",
@@ -173,6 +168,48 @@
             "type": "field",
             "label": "Value",
             "key": "valueColumn"
+          },
+          {
+            "type": "select",
+            "label": "Display Mode",
+            "key": "displayMode",
+            "defaultValue": "simple",
+            "options": [
+              {
+                "label": "Simple (text only)",
+                "value": "simple"
+              },
+              {
+                "label": "Rich (with image and email)",
+                "value": "rich"
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "label": "Image Field",
+            "key": "imageColumn",
+            "dependsOn": {
+              "setting": "displayMode",
+              "value": "rich"
+            }
+          },
+          {
+            "type": "field",
+            "label": "Email Field", 
+            "key": "emailColumn",
+            "dependsOn": {
+              "setting": "displayMode",
+              "value": "rich"
+            }
+          },
+          {
+            "type": "number",
+            "label": "Page Size",
+            "key": "pageSize",
+            "defaultValue": 25,
+            "min": 5,
+            "max": 100
           }
         ]
       },
