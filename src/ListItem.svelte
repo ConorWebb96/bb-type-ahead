@@ -77,9 +77,19 @@
         selectedLabels = Array.from(labelMap.values());
         selectedValues = Array.from(valueMap.values());
         if (type == "array") {
-            fieldApi.setValue(selectedValues.map(item => item.value)); // set the values on the field api
+            // Store objects with both label and value for proper display
+            const labelsAndValues = selectedLabels.map((labelItem, index) => ({
+                label: labelItem.label,
+                value: selectedValues[index]?.value
+            }));
+            fieldApi.setValue(labelsAndValues);
         } else if(type == "relationship") {
-            fieldApi.setValue(selectedValues.map(item => item.value)); 
+            // Store objects with both label and value for proper display
+            const labelsAndValues = selectedLabels.map((labelItem, index) => ({
+                label: labelItem.label,
+                value: selectedValues[index]?.value
+            }));
+            fieldApi.setValue(labelsAndValues);
         }
         selectedLabels = selectedLabels; // update selected labels allows isSelected to change
         // Dispatch the selectedLabels back to the parent component

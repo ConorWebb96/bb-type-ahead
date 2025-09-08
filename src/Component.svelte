@@ -114,26 +114,38 @@
       selectedValues = [{ value: fieldState.value }];
     } else if (Array.isArray(fieldState.value)) {
       selectedLabels = fieldState.value.map(item => {
-        if (typeof item === 'object' && item !== null && item[labelColumn]) {
-          return { label: item[labelColumn] };
-        } else {
-          // Handle cases where the value is a primitive or doesn't have labelColumn
-          // Format the value to be more user-friendly
-          const formattedLabel = String(item)
-            .replace(/_/g, ' ')  // Replace underscores with spaces
-            .replace(/([A-Z])/g, ' $1')  // Add space before capitals
-            .replace(/^\w/, c => c.toUpperCase())  // Capitalize first letter
-            .trim();
-          return { label: formattedLabel };
+        if (typeof item === 'object' && item !== null) {
+          // Handle new format with stored label/value objects
+          if (item.label && item.value !== undefined) {
+            return { label: item.label };
+          }
+          // Handle legacy format with labelColumn/valueColumn
+          else if (item[labelColumn]) {
+            return { label: item[labelColumn] };
+          }
         }
+        // Fallback for primitive values (legacy support)
+        const formattedLabel = String(item)
+          .replace(/_/g, ' ')  // Replace underscores with spaces  
+          .replace(/([A-Z])/g, ' $1')  // Add space before capitals
+          .replace(/^\w/, c => c.toUpperCase())  // Capitalize first letter
+          .trim();
+        return { label: formattedLabel };
       });
+      
       selectedValues = fieldState.value.map(item => {
-        if (typeof item === 'object' && item !== null && item[valueColumn]) {
-          return { value: item[valueColumn] };
-        } else {
-          // Handle cases where the value is a primitive or doesn't have valueColumn
-          return { value: item };
+        if (typeof item === 'object' && item !== null) {
+          // Handle new format with stored label/value objects
+          if (item.label && item.value !== undefined) {
+            return { value: item.value };
+          }
+          // Handle legacy format with labelColumn/valueColumn
+          else if (item[valueColumn]) {
+            return { value: item[valueColumn] };
+          }
         }
+        // Fallback for primitive values (legacy support)
+        return { value: item };
       });
     } else {
       // Reset if fieldState.value is not in expected format
@@ -380,6 +392,8 @@
   function handleSelectedValues(event) {
     selectedValues = event.detail;
     if (onChange) { // apply onchange here related to the value
+      // Extract just the values for onChange events, since fieldState now contains {label, value} objects
+      // but onChange should receive the raw values for compatibility
       if (type == "string") {
         onChange({ value: event.detail[0]?.value });
       } else if (type == "array") {
