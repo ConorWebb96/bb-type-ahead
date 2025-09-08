@@ -28,7 +28,6 @@
   export let defaultValue
   export let minSearchLength = 1;
   
-  export let limitResults;
   export let optionsType;
   export let field;
   export let array;
@@ -43,6 +42,13 @@
   export let searchArray;
   export let labelColumn;
   export let valueColumn;
+  export let displayMode = 'simple';
+  export let imageColumn;
+  export let emailColumn;
+  export let pageSize = 25;
+  
+  // Use pageSize, but fall back to limitResults for backwards compatibility
+  $: effectivePageSize = pageSize;
 
   export let disabled;
   export let sort;
@@ -59,7 +65,12 @@
   let abortController = null;
   let open = false;
   let highlightedIndex = -1;
-  let popoverElement;
+  
+  // Pagination state
+  let currentBookmark = null;
+  let hasNextPage = false;
+  let loadingMore = false;
+  let allResults = [];
 
   $: selectedLabels = [];
   $: selectedValues = [];
@@ -81,7 +92,7 @@
     validation,
     formStep
   )
-  $: labelClass = labelPos === "above" ? "" : `spectrum-FieldLabel--${labelPos}`
+  $: labelClass = labelPos === "above" ? "above" : `${labelPos}`
   // Update form properties in parent component on every store change
   $: unsubscribe = formField?.subscribe(value => {
     fieldState = value?.fieldState
@@ -101,10 +112,38 @@
     if (type === 'string') {
       selectedLabels = [{ label: fieldState.value }];
       selectedValues = [{ value: fieldState.value }];
+    } else if (Array.isArray(fieldState.value)) {
+      selectedLabels = fieldState.value.map(item => {
+        if (typeof item === 'object' && item !== null && item[labelColumn]) {
+          return { label: item[labelColumn] };
+        } else {
+          // Handle cases where the value is a primitive or doesn't have labelColumn
+          // Format the value to be more user-friendly
+          const formattedLabel = String(item)
+            .replace(/_/g, ' ')  // Replace underscores with spaces
+            .replace(/([A-Z])/g, ' $1')  // Add space before capitals
+            .replace(/^\w/, c => c.toUpperCase())  // Capitalize first letter
+            .trim();
+          return { label: formattedLabel };
+        }
+      });
+      selectedValues = fieldState.value.map(item => {
+        if (typeof item === 'object' && item !== null && item[valueColumn]) {
+          return { value: item[valueColumn] };
+        } else {
+          // Handle cases where the value is a primitive or doesn't have valueColumn
+          return { value: item };
+        }
+      });
     } else {
-      selectedLabels = fieldState.value.map(item => ({ label: item[labelColumn] }));
-      selectedValues = fieldState.value.map(item => ({ value: item[valueColumn] }));
+      // Reset if fieldState.value is not in expected format
+      selectedLabels = [];
+      selectedValues = [];
     }
+  } else {
+    // Clear selections if no fieldState value
+    selectedLabels = [];
+    selectedValues = [];
   }
 
   const search = async (searchString) => {
@@ -116,7 +155,11 @@
     // Check cache first
     const cacheKey = `${searchString}-${searchFieldState}-${fieldFilters}`;
     if (searchCache.has(cacheKey)) {
-      results = searchCache.get(cacheKey);
+      const cached = searchCache.get(cacheKey);
+      results = cached.results || cached; // Handle both new and old cache formats
+      allResults = cached.allResults || cached;
+      hasNextPage = cached.hasNextPage || false;
+      currentBookmark = cached.currentBookmark || null;
       return;
     }
 
@@ -144,17 +187,30 @@
       }
 
       const searchResults = await API.searchTable(dataSource.tableId, {
-        paginate: false,
-        limit: limitResults,
+        paginate: true,
+        limit: effectivePageSize,
+        bookmark: null,
         query: queryParam,
       });
+      
+      currentBookmark = null;
 
       if (searchResults?.rows) {
-        let processedResults = searchResults.rows.map(row => ({
-          _id: row._id,
-          [labelColumn]: row[labelColumn],
-          [valueColumn]: row[valueColumn]
-        }));
+        let processedResults = searchResults.rows.map(row => {
+          const result = {
+            _id: row._id,
+            [labelColumn]: row[labelColumn],
+            [valueColumn]: row[valueColumn]
+          };
+          
+          // Add additional fields for rich display
+          if (displayMode === 'rich') {
+            if (imageColumn) result[imageColumn] = row[imageColumn];
+            if (emailColumn) result[emailColumn] = row[emailColumn];
+          }
+          
+          return result;
+        });
 
         if (sort && processedResults.length > 1) {
           processedResults.sort((a, b) => {
@@ -165,7 +221,10 @@
         }
 
         results = processedResults;
-        searchCache.set(cacheKey, results);
+        allResults = [...processedResults];
+        hasNextPage = searchResults.hasNextPage || false;
+        currentBookmark = searchResults.bookmark || null;
+        searchCache.set(cacheKey, { results, hasNextPage, allResults, currentBookmark });
 
         // Limit cache size
         if (searchCache.size > 50) {
@@ -174,6 +233,9 @@
         }
       } else {
         results = [];
+        allResults = [];
+        hasNextPage = false;
+        currentBookmark = null;
       }
     } catch (error) {
       if (error.name !== 'AbortError') {
@@ -232,7 +294,7 @@
     }
   };
 
-  const selectOption = (option) => {
+  const selectOption = () => {
     // This will be handled by the ListItem component
     // but we need to close the dropdown and reset highlight
     open = false;
@@ -246,9 +308,72 @@
     selectedLabels = [];
     selectedValues = [];
     results = [];
+    allResults = [];
     searchString = '';
+    hasNextPage = false;
     searchCache.clear();
   }
+  
+  // Load more results
+  const loadMore = async () => {
+    if (loadingMore || !hasNextPage || !searchString) return;
+    
+    loadingMore = true;
+    
+    try {
+      let queryParam = {
+        [fieldFilters]: {
+          [searchFieldState]: searchString,
+        },
+      };
+
+      if (searchOptionsType === 'searchArray') {
+        queryParam = {
+          string: {
+            [searchFieldState]: [searchString],
+          },
+        };
+      }
+
+      const searchResults = await API.searchTable(dataSource.tableId, {
+        paginate: true,
+        limit: effectivePageSize,
+        bookmark: currentBookmark,
+        query: queryParam,
+      });
+
+      if (searchResults?.rows) {
+        let processedResults = searchResults.rows.map(row => {
+          const result = {
+            _id: row._id,
+            [labelColumn]: row[labelColumn],
+            [valueColumn]: row[valueColumn]
+          };
+          
+          // Add additional fields for rich display
+          if (displayMode === 'rich') {
+            if (imageColumn) result[imageColumn] = row[imageColumn];
+            if (emailColumn) result[emailColumn] = row[emailColumn];
+          }
+          
+          return result;
+        });
+
+        allResults = [...allResults, ...processedResults];
+        results = [...results, ...processedResults];
+        currentBookmark = searchResults.bookmark || null;
+        hasNextPage = searchResults.hasNextPage || false;
+        
+        // Update cache
+        const cacheKey = `${searchString}-${searchFieldState}-${fieldFilters}`;
+        searchCache.set(cacheKey, { results, hasNextPage, allResults, currentBookmark });
+      }
+    } catch (error) {
+      console.error('Load more failed:', error);
+    } finally {
+      loadingMore = false;
+    }
+  };
   function handleSelectedLabels(event) {
     selectedLabels = event.detail;
   }
@@ -256,14 +381,15 @@
     selectedValues = event.detail;
     if (onChange) { // apply onchange here related to the value
       if (type == "string") {
-        onChange({ value: event.detail[0].value });
-      }else {
-        onChange({ value: event.detail});
+        onChange({ value: event.detail[0]?.value });
+      } else if (type == "array") {
+        onChange({ value: event.detail.map(item => item.value) });
+      } else if (type == "relationship") {
+        onChange({ value: event.detail.map(item => item.value) });
       }
     }
   }
 </script>
-asdasd
   <div class="spectrum-Form-item {labelClass === "above" ? "flexCol" : ""}" use:styleable={$component.styles}>
     {#if !formContext}
       <div class="placeholder">Form components need to be wrapped in a form</div>
@@ -291,6 +417,7 @@ asdasd
             aria-expanded={open}
             aria-label={label || 'Type ahead selector'}
             id="typeahead-button-{fieldState?.fieldId}"
+            title={selectedValues.length ? `Values: ${selectedValues.map(v => v.value).join(', ')}` : ''}
           >
             {#if selectedLabels.length}
               <span class="spectrum-Picker-label is-placeholder">
@@ -307,7 +434,6 @@ asdasd
           </button>
           {#if open}
             <div
-              bind:this={popoverElement}
               use:clickOutside={handleOutsideClick}
               transition:fly|local={{ y: -20, duration: 200 }}
               class="spectrum-Popover spectrum-Popover--bottom spectrum-Picker-popover is-open w-full"
@@ -350,9 +476,29 @@ asdasd
                           on:selectedValues={handleSelectedValues}
                           type={type}
                           highlighted={highlightedIndex === index}
-                          on:select={() => selectOption(option)}
+                          displayMode={displayMode}
+                          imageColumn={imageColumn}
+                          emailColumn={emailColumn}
+                          on:select={() => selectOption()}
                         />
                        {/each}
+                       
+                       {#if hasNextPage}
+                         <li class="spectrum-Menu-item load-more-item">
+                           <button 
+                             class="load-more-button"
+                             on:click={loadMore}
+                             disabled={loadingMore}
+                           >
+                             {#if loadingMore}
+                               <span class="spinner spinner-small"></span>
+                               Loading more...
+                             {:else}
+                               Load more results
+                             {/if}
+                           </button>
+                         </li>
+                       {/if}
                     {/if}
                    </ul>
                 {/if}
@@ -461,5 +607,58 @@ asdasd
     color: var(--spectrum-global-color-gray-600);
     font-style: italic;
     text-align: center;
+  }
+
+  /* Pagination and load more styling */
+  .load-more-item {
+    border-top: 1px solid var(--spectrum-global-color-gray-300);
+    padding: 0;
+  }
+
+  .load-more-button {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: var(--spectrum-global-color-gray-100);
+    color: var(--spectrum-global-color-blue-600);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: background-color 0.15s ease;
+  }
+
+  .load-more-button:hover:not(:disabled) {
+    background: var(--spectrum-global-color-gray-200);
+  }
+
+  .load-more-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .spinner-small {
+    width: 1rem;
+    height: 1rem;
+    border-width: 2px;
+  }
+
+  /* Improved scrolling for long lists */
+  ul.spectrum-Menu {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  /* Better visual separation for rich items - using global to prevent unused selector warning */
+  :global(.spectrum-Menu-item + .spectrum-Menu-item) {
+    border-top: 1px solid var(--spectrum-global-color-gray-200);
+  }
+
+  /* Rich display mode adjustments */
+  ul.spectrum-Menu:has(.rich-item) .spectrum-Menu-item:not(.load-more-item) {
+    padding: 0;
   }
 </style>

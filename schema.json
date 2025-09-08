@@ -196,7 +196,7 @@
           },
           {
             "type": "field",
-            "label": "Email Field", 
+            "label": "Display Field", 
             "key": "emailColumn",
             "dependsOn": {
               "setting": "displayMode",
