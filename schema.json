@@ -1,12 +1,16 @@
 {
   "type": "component",
-  "metadata": {},
+  "metadata": {
+    "svelteMajor": 5
+  },
   "schema": {
     "name": "bb-type-ahead",
     "friendlyName": "Type ahead",
     "description": "A custom component used for filtering selectable items whether that be relationships or general options.",
     "icon": "keyboard",
-    "requiredAncestors": ["form"],
+    "requiredAncestors": [
+      "form"
+    ],
     "settings": [
       {
         "type": "table",
@@ -196,7 +200,7 @@
           },
           {
             "type": "field",
-            "label": "Display Field", 
+            "label": "Display Field",
             "key": "emailColumn",
             "dependsOn": {
               "setting": "displayMode",
