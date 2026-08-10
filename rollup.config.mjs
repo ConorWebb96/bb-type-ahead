@@ -13,6 +13,11 @@ const pkg = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url
 import crypto from "crypto"
 import { validate } from "@budibase/backend-core/plugins"
 
+const cssHash = ({ hash, filename, css }) => {
+  const p = (filename ?? "").split(/[\\/]/).slice(-2).join("/")
+  return `svelte-${pkg.name}-${hash(`${pkg.name}:${p || css}`)}`
+}
+
 const ignoredWarnings = [
   "unused-export-let",
   "css-unused-selector",
@@ -104,6 +109,7 @@ export default {
         compatibility: {
           componentApi: 4,
         },
+        cssHash,
       },
       onwarn: (warning, handler) => {
         // Ignore some warnings

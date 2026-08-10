@@ -417,7 +417,7 @@
       <label
         class:hidden={!label}
         for={fieldState?.fieldId}
-        class={`spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-Form-itemLabel svelte-tta2b5 ${labelClass}`}
+        class={`spectrum-FieldLabel spectrum-FieldLabel--sizeM spectrum-Form-itemLabel ${labelClass}`}
       >
         {label || " "}
       </label>
